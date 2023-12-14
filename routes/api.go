@@ -10,4 +10,5 @@ func Routes(ctx *fiber.App) {
 	route := ctx.Group("/api/v1")
 
 	route.Post("/auth/register", controllers.Register)
+	route.Post("/auth/login", controllers.Login)
 }
