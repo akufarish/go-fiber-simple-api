@@ -1,8 +1,8 @@
 package controllers
 
 import (
+	"go-fiber/app/models"
 	"go-fiber/databases/conn"
-	"go-fiber/databases/migrations"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -19,7 +19,7 @@ func Hash(password string) (string, error)  {
 }
 
 func Login(ctx *fiber.Ctx) error {
-	var request migrations.User
+	var request models.User
 
 	if err := ctx.BodyParser(&request); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -27,8 +27,7 @@ func Login(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// Find the user by email or username
-	var user migrations.User
+	var user models.User
 	result := conn.DB.Where("email = ? OR username = ?", request.Email, request.Username).First(&user)
 	if result.Error != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -36,14 +35,12 @@ func Login(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// Compare the hashed password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid credentials",
+			"error": "Password Salah",
 		})
 	}
 
-	// Passwords match, user is authenticated
 	return ctx.JSON(fiber.Map{
 		"message": "Login successful",
 		"user":    user,
@@ -52,15 +49,22 @@ func Login(ctx *fiber.Ctx) error {
 
 
 func Register(ctx *fiber.Ctx) error {
-    var user migrations.User
+    var request models.User
+	var user models.User
 
-    if err := ctx.BodyParser(&user); err != nil {
+    if err := ctx.BodyParser(&request); err != nil {
         return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "Bad Request",
         })
     }
 
-    hashedPassword, err := Hash(user.Password)
+	if conn.DB.Where("email = ?", request.Email).First(&user) != nil {
+		return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"message": "Email sudah terdaftar!",
+		})
+	}
+
+    hashedPassword, err := Hash(request.Password)
 
     if err != nil {
         return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -68,12 +72,10 @@ func Register(ctx *fiber.Ctx) error {
         })
     }
 
-	user.Password = hashedPassword
+	request.Password = hashedPassword
 
-    // Create the user in the database using RegisterRequest fields
-    conn.DB.Create(&user)
+    conn.DB.Create(&request)
 
-    // Modify the response to include more information about the registered user
     return ctx.JSON(fiber.Map{
         "message": "Registration successful",
     })

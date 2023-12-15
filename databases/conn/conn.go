@@ -1,7 +1,7 @@
 package conn
 
 import (
-	"go-fiber/databases/migrations"
+	"go-fiber/app/models"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -16,7 +16,8 @@ func ConnDB() {
 		panic(err)
 	}
 
-	database.AutoMigrate(&migrations.User{})
+	database.AutoMigrate(&models.User{})
+	database.AutoMigrate(&models.Barang{})
 
 	DB = database
 }

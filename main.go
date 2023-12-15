@@ -14,5 +14,5 @@ func main() {
 
 	routes.Routes(app)
 
-	app.Listen(":8000")
+	app.Listen("127.0.0.1:8000")
 }
